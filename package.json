@@ -19,6 +19,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "lodash": "^4.17.10",
-    "puppeteer": "^1.4.0"
+    "puppeteer": "^1.4.0",
+    "url-exists": "^1.0.3"
   }
 }

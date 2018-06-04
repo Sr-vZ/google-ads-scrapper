@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
-const _ =require('lodash')
-const fs = require('fs')
+const _ = require('lodash');
+const fs = require('fs');
 const cheerio = require('cheerio');
 
 
@@ -13,7 +13,7 @@ url = 'http://www.dailymail.co.uk/home/index.html'; //tvf link;
     });
     const page = await browser.newPage();
     await page.goto(url);
-    await page.waitForSelector('body')
+    await page.waitFor(7000)
     // const frames = await page.frames();
 
     // const ads = frames.find((frame) => {
@@ -46,42 +46,97 @@ url = 'http://www.dailymail.co.uk/home/index.html'; //tvf link;
     // });
     // console.log('Dimensions:', dimensions);
     const adsData = await page.evaluate(() => {
-        try{
+
         jsonData = []
         // data = document.querySelectorAll("iframe[id*='google_ads']")
         // data = document.querySelectorAll(".ism-frame")
         data = window.frames.$("iframe[id*='ad']")
         for (i = 0; i < data.length; i++) {
             iframe = (data[i].contentDocument || data[i].contentWindow.document)
-            img=''
+            img = ''
             innerData = data[i].contentWindow.document.childNodes["0"].innerHTML
-            if(iframe.querySelectorAll('img').length>0)
+            if (iframe.querySelectorAll('img').length > 0)
                 img = iframe.querySelector('img').src
-            
-            var $ = cheerio.load(innerData)
 
+            // var $ = cheerio.load(innerData)
+            //fs.writeFileSync('test.html',innerData)
             jsonData.push({
                 //ad_image :document.querySelector('.ism-frame').querySelector('iframe').src
                 ad_src: img,
                 //ad_url: iframe.querySelector('img').getAttribute('onclick')
                 ad_html: iframe.innerHTML,
-                ad : iframe,
+                ad: iframe,
                 innerHTML: innerData
             })
         }
         // return new XMLSerializer().serializeToString(document.doctype) + document.documentElement.outerHTML
         return jsonData
-    }
-    catch(err){
-        console.log(err)
-    }
+
     })
 
     // console.log(channeldata[0].link)
-    
-    fs.writeFileSync('dailymail_ads.json',JSON.stringify(adsData))
-    console.log(adsData)
+    var allDetails = []
+    for (i = 0; i < adsData.length; i++) {
+        fs.writeFileSync('temp.html', adsData[i].innerHTML)
+        await page.goto(__dirname + '/temp.html')
+        ad = await page.evaluate(() => {
+            
+            function stripScripts(s) {
+                var div = document.createElement('div');
+                div.innerHTML = s;
+                var scripts = div.getElementsByTagName('script');
+                var i = scripts.length;
+                while (i--) {
+                    scripts[i].parentNode.removeChild(scripts[i]);
+                }
+                return div.innerHTML;
+            }
+            data = []
+            images = []
+            links = []
+            tmp = []
+            html = []
+            tmp = document.querySelectorAll('img')
+            for (j = 0; j < tmp.length; j++) {
+                images.push(tmp[j].src)
+            }
+            tmp = document.querySelectorAll('a')
+            for (j = 0; j < tmp.length; j++) {
+                links.push(tmp[j].href)
+            }
+            tmp = document.querySelectorAll('div')
+            for (j = 0; j < tmp.length; j++) {
+                html.push(stripScripts(tmp[j].innerHTML))
+            }
+            data.push({
+                'images': images,
+                'links': links,
+                'html': html
+            })
+            return data
+        })
+        //fs.appendFileSync('dailymail_ads_links.json', JSON.stringify(ad))
+        console.log(ad)
+        allDetails.push(ad)
+    }
+
+    fs.writeFileSync('dailymail_ads.json', JSON.stringify(allDetails))
+
+    //fs.writeFileSync('dailymail_ads_links.json', JSON.stringify(ad))
+    //console.log(adsData)
     // console.log(ads)
     await browser.close();
+
+
 })();
 
+function stripScripts(s) {
+    var div = document.createElement('div');
+    div.innerHTML = s;
+    var scripts = div.getElementsByTagName('script');
+    var i = scripts.length;
+    while (i--) {
+        scripts[i].parentNode.removeChild(scripts[i]);
+    }
+    return div.innerHTML;
+}
