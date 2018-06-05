@@ -3,47 +3,66 @@ const _ = require('lodash');
 const fs = require('fs');
 const cheerio = require('cheerio');
 
-
 url = 'http://www.dailymail.co.uk/home/index.html'; //tvf link;
+
+const args = process.argv;
+console.log(args);
+if(args[2]===""){
+    console.log('Please enter an URL after the program name')
+    process.exit(1)
+}else{
+    if(isURL(args[2])){
+        url = args[2]
+    }
+}
+
+
+
+function isURL(str) {
+    return /^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$/.test(str); 
+  }
+
 
 (async () => {
     const browser = await puppeteer.launch({
-        headless: true,
-        args: ["--disable-web-security"]
+        headless: false,
+        args: ["--no-sandbox","--disable-web-security", "--user-data-dir"]
     });
     const page = await browser.newPage();
+    process.on("unhandledRejection", (reason, p) => {
+        console.error("Unhandled Rejection at: Promise", p, "reason:", reason);
+        browser.close();
+      });
     await page.goto(url);
-    await page.waitFor(7000)
+    await page.waitForSelector('body')
     // const frames = await page.frames();
 
     // const ads = frames.find((frame) => {
     //     return frame.html();
     //   });
-    // console.log('Scrolling through page');
+    console.log('Scrolling through page');
 
-    // await autoScroll(page);
-
-    // await page.evaluate(async () => {
-    //     await new Promise((resolve, reject) => {
-    //         try {
-    //             const maxScroll = Number.MAX_SAFE_INTEGER;
-    //             let lastScroll = 0;
-    //             const interval = setInterval(() => {
-    //                 window.scrollBy(0, 100);
-    //                 const scrollTop = document.documentElement.scrollTop;
-    //                 if (scrollTop === maxScroll || scrollTop === lastScroll) {
-    //                     clearInterval(interval);
-    //                     resolve();
-    //                 } else {
-    //                     lastScroll = scrollTop;
-    //                 }
-    //             }, 500);
-    //         } catch (err) {
-    //             console.log(err);
-    //             reject(err.toString());
-    //         }
-    //     });
-    // });
+    await page.evaluate(async () => {
+        await new Promise((resolve, reject) => {
+            try {
+                const maxScroll = Number.MAX_SAFE_INTEGER;
+                let lastScroll = 0;
+                const interval = setInterval(() => {
+                    window.scrollBy(0, 1000);
+                    const scrollTop = document.documentElement.scrollTop;
+                    if (scrollTop === maxScroll || scrollTop === lastScroll) {
+                        clearInterval(interval);
+                        resolve();
+                    } else {
+                        lastScroll = scrollTop;
+                    }
+                }, 500);
+            } catch (err) {
+                console.log(err);
+                reject(err.toString());
+            }
+        });
+    });
     // console.log('Dimensions:', dimensions);
     const adsData = await page.evaluate(() => {
 
