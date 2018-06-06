@@ -26,7 +26,8 @@ function isURL(str) {
 (async () => {
     const browser = await puppeteer.launch({
         headless: false,
-        args: ["--no-sandbox","--disable-web-security", "--user-data-dir"]
+        // args: ["--no-sandbox","--disable-web-security", "--user-data-dir"]
+        args:["--disable-web-security"]
     });
     const page = await browser.newPage();
     process.on("unhandledRejection", (reason, p) => {
@@ -69,7 +70,7 @@ function isURL(str) {
         jsonData = []
         // data = document.querySelectorAll("iframe[id*='google_ads']")
         // data = document.querySelectorAll(".ism-frame")
-        data = window.frames.$("iframe[id*='ad']")
+        data = document.querySelectorAll("iframe[id*='ad']")
         for (i = 0; i < data.length; i++) {
             iframe = (data[i].contentDocument || data[i].contentWindow.document)
             img = ''
